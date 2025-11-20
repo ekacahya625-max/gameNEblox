@@ -1,0 +1,221 @@
+# index.html
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>City Runner</title>
+</head>
+<body>
+    <div id="startScreen">
+        <h1>City Runner</h1>
+        <button id="startBtn">Start Game</button>
+    </div>
+
+    <canvas id="gameCanvas" width="900" height="500"></canvas>
+
+    <div id="questionBox" class="hidden">
+        <p id="questionText"></p>
+        <input type="text" id="answerInput" placeholder="Jawaban..." />
+        <button id="answerBtn">Submit</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+```
+
+---
+
+# script.js
+```javascript
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const startBtn = document.getElementById("startBtn");
+const questionBox = document.getElementById("questionBox");
+const questionText = document.getElementById("questionText");
+const answerInput = document.getElementById("answerInput");
+const answerBtn = document.getElementById("answerBtn");
+
+let gameRunning = false;
+let hasKey = false;
+let questionAnswered = false;
+
+let player = {
+    x: 100,
+    y: 380,
+    w: 60,
+    h: 80,
+    vy: 0,
+    onGround: false,
+    gravity: 1,
+    img: new Image()
+};
+player.img.src = "https://i.ibb.co/QpWJrdb/city-player.png";
+
+let enemy = {
+    x: 600,
+    y: 390,
+    w: 60,
+    h: 70,
+    dir: 1,
+    img: new Image()
+};
+enemy.img.src = "https://i.ibb.co/3pMM7kM/city-enemy.png";
+
+let key = {
+    x: 400,
+    y: 360,
+    w: 40,
+    h: 40,
+    taken: false,
+    img: new Image()
+};
+key.img.src = "https://i.ibb.co/Vx7yM4f/key.png";
+
+let door = {
+    x: 820,
+    y: 330,
+    w: 60,
+    h: 120
+};
+
+let keys = {};
+document.addEventListener("keydown", e => (keys[e.key] = true));
+document.addEventListener("keyup", e => (keys[e.key] = false));
+
+startBtn.onclick = () => {
+    document.getElementById("startScreen").style.display = "none";
+    gameRunning = true;
+    loop();
+};
+
+function physics() {
+    if (keys["ArrowRight"]) player.x += 5;
+    if (keys["ArrowLeft"]) player.x -= 5;
+    
+    if (keys["ArrowUp"] && player.onGround) {
+        player.vy = -20;
+        player.onGround = false;
+    }
+
+    player.vy += player.gravity;
+    player.y += player.vy;
+
+    if (player.y + player.h >= 460) {
+        player.y = 460 - player.h;
+        player.vy = 0;
+        player.onGround = true;
+    }
+
+    enemy.x += enemy.dir * 2;
+    if (enemy.x < 500 || enemy.x > 700) enemy.dir *= -1;
+}
+
+function collides(a, b) {
+    return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+    );
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#444";
+    ctx.fillRect(0, 460, 900, 50);
+
+    ctx.drawImage(player.img, player.x, player.y, player.w, player.h);
+    ctx.drawImage(enemy.img, enemy.x, enemy.y, enemy.w, enemy.h);
+
+    if (!key.taken) ctx.drawImage(key.img, key.x, key.y, key.w, key.h);
+
+    ctx.fillStyle = "brown";
+    ctx.fillRect(door.x, door.y, door.w, door.h);
+}
+
+function loop() {
+    if (!gameRunning) return;
+
+    physics();
+    draw();
+
+    if (!key.taken && collides(player, key)) {
+        key.taken = true;
+        askQuestion();
+    }
+
+    if (hasKey && questionAnswered && collides(player, door)) {
+        alert("Level Selesai! Kamu berhasil!");
+        gameRunning = false;
+    }
+
+    requestAnimationFrame(loop);
+}
+
+function askQuestion() {
+    const q = "Ibukota negara Jepang adalah?";
+    const a = "tokyo";
+
+    questionText.innerText = q;
+    questionBox.classList.remove("hidden");
+
+    answerBtn.onclick = () => {
+        if (answerInput.value.toLowerCase() === a) {
+            hasKey = true;
+            questionAnswered = true;
+            questionBox.classList.add("hidden");
+        } else {
+            alert("Jawaban salah!");
+        }
+    };
+}
+```
+
+---
+
+# style.css
+```css
+body {
+    margin: 0;
+    background: #222;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+#startScreen {
+    margin-top: 100px;
+}
+
+#gameCanvas {
+    display: none;
+    background: #87ceeb;
+    border: 4px solid white;
+    margin-top: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+#questionBox {
+    background: rgba(0, 0, 0, 0.7);
+    width: 300px;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+```
